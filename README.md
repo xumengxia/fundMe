@@ -12,8 +12,16 @@ npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/Lock.js
 ```
 ### 初始化
-```npx hardhat
+```
+npx hardhat
+
 ```
 ### 编译合约
-```npx hardhat compile
+```
+npx hardhat compile
+
+```
+### npx hardhat run scripts/deployFundMe.js
+```
+npx hardhat run scripts/deployFundMe.js --network sepolia
 ```
