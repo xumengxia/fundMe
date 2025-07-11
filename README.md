@@ -11,3 +11,9 @@ REPORT_GAS=true npx hardhat test
 npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/Lock.js
 ```
+### 初始化
+```npx hardhat
+```
+### 编译合约
+```npx hardhat compile
+```
