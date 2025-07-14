@@ -10,28 +10,46 @@ npx hardhat test
 REPORT_GAS=true npx hardhat test
 npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/Lock.js
+
 ```
+
+# 运行脚本
+
+```
+npx hardhat deploy-fundme --network sepolia
+合约交互
+npx hardhat interact-fundme --addr 地址 --network sepolia
+
+```
+
 ### 初始化
+
 ```
 npx hardhat
 
 ```
+
 ### 编译合约
+
 ```
 npx hardhat compile
 
 ```
+
 ### 部署合约
+
 ```
 npx hardhat run scripts/deployFundMe.js --network sepolia
 ```
 
 ### 提取环境变量
+
 ```
 npm install --save-dev dotenv
 ```
 
 ### 加密设置
+
 ```
 npm install --save-dev @chainlink/env-enc
 
