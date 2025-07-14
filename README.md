@@ -31,7 +31,7 @@ npx hardhat run scripts/deployFundMe.js --network sepolia
 npm install --save-dev dotenv
 ```
 
-### 提取环境变量
+### 加密设置
 ```
 npm install --save-dev @chainlink/env-enc
 
@@ -44,5 +44,5 @@ npx env-enc set 键值（SEPOLIA_URL）
 需要继续添加就输入新的值否则直接enter结束进程
 
 4. 使用hardhat 验证合约
-npx hardhat verify --network mainnet DEPLOYED_CONTRACT_ADDRESS "Constructor argument 1"
+npx hardhat verify --network sepolia DEPLOYED_CONTRACT_ADDRESS "Constructor argument 1"
 ```
