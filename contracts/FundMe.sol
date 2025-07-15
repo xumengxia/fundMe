@@ -35,12 +35,10 @@ contract FundMe {
 
     bool public getFundSuccess = false;
 
-    constructor(uint _lockTime) {
+    constructor(uint _lockTime, address dataFeedAddr) {
         // 合约部署得到时候会调用 constructor
-        // sepolia testnet
-        dataFeed = AggregatorV3Interface(
-            0x694AA1769357215DE4FAC081bf1f309aDC325306
-        );
+        // sepolia testnet  0x694AA1769357215DE4FAC081bf1f309aDC325306
+        dataFeed = AggregatorV3Interface(dataFeedAddr);
         owner = msg.sender; // 当前合约部署的人
         deploymentTimestamp = block.timestamp; // block当前的区块
         lockTime = _lockTime;
