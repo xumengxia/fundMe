@@ -1,12 +1,12 @@
 const { task } = require("hardhat/config");
-
+const { LOCK_TIME } = require("../helper-hardhat-config");
 task("deploy-fundme", "deploy and verify fundme contract").setAction(
   async (taskArgs, hre) => {
     // create factory
     const fundMeFactory = await ethers.getContractFactory("FundMe");
     console.log("Contract deploying");
     // deploy contract from factory 10 时间短 300/60 = 5min
-    const fundMe = await fundMeFactory.deploy(600);
+    const fundMe = await fundMeFactory.deploy(LOCK_TIME);
     // 等待广播完毕
     await fundMe.waitForDeployment();
     console.log(
@@ -23,7 +23,7 @@ task("deploy-fundme", "deploy and verify fundme contract").setAction(
       console.log("waiting for 5 confirmations");
       await fundMe.deploymentTransaction().wait(5);
 
-      await verifyFundMe(fundMe.target, [600]);
+      await verifyFundMe(fundMe.target, [LOCK_TIME]);
     } else {
       console.log("verification skipped..");
     }
