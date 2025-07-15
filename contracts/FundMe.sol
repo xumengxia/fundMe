@@ -21,7 +21,7 @@ contract FundMe {
 
     uint256 MINIMUM_VALUE = 1 * 10 ** 18; // wei最小值 此处代表的是usd
 
-    AggregatorV3Interface internal dataFeed; // 初始化 喂价
+    AggregatorV3Interface public dataFeed; // 初始化 喂价
 
     uint256 constant TRAGET = 50 * 10 ** 18; // constant 常量不可改变
 
