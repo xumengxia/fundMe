@@ -14,6 +14,9 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 module.exports = {
   defaultNetwork: "hardhat", // sepolia
   solidity: "0.8.28",
+  mocha: {
+    timeout: 400000, // 200秒当前单位毫秒
+  },
   networks: {
     sepolia: {
       url: SEPOLIA_URL, // Alchemy Infura QuickNode
