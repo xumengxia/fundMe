@@ -37,4 +37,7 @@ module.exports = {
       default: 2, // 对应我第二个账号
     },
   },
+  gasReporter: {
+    enabled: true, // gas消耗报告
+  },
 };
