@@ -1,0 +1,39 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\n// solhint-disable-next-line interface-starts-with-i\ninterface AggregatorV3Interface {\n  function decimals() external view returns (uint8);\n\n  function description() external view returns (string memory);\n\n  function version() external view returns (uint256);\n\n  function getRoundData(\n    uint80 _roundId\n  ) external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);\n\n  function latestRoundData()\n    external\n    view\n    returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound);\n}\n"
+    },
+    "contracts/FundMe.sol": {
+      "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.0;\r\nimport {AggregatorV3Interface} from \"@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol\";\r\n\r\n// 众筹\r\n// 1. 创建一个收款函数\r\n// 2. 记录投资人并且查看\r\n// 3. 达到目标值，生产商可以提款\r\n// 4. 在锁定期内没有达到目标值，投资人在锁定期后可以退款\r\n\r\n// 预言机 data feed\r\n\r\n// 获取测试网通证\r\n// https://docs.chain.link/data-feeds/price-feeds/addresses?page=1&testnetPage=1\r\n// chainlink 测试网水龙头：https://faucets.chain.link\r\n// Alchemy 测试网水龙头:https://sepoliafaucet.com/\r\n// Infura 测试网水龙头:https://www.infura.io/faucet/sepolia\r\n\r\ncontract FundMe {\r\n    mapping(address => uint256) public funderToAmount;\r\n\r\n    uint256 MINIMUM_VALUE = 1 * 10 ** 18; // wei最小值 此处代表的是usd\r\n\r\n    AggregatorV3Interface public dataFeed; // 初始化 喂价\r\n\r\n    uint256 constant TRAGET = 50 * 10 ** 18; // constant 常量不可改变\r\n\r\n    address public owner; // 合约的所有者\r\n\r\n    uint256 deploymentTimestamp; // 合约部署时间\r\n\r\n    uint lockTime; // 锁定时间\r\n\r\n    address erc20Addr; // 只允许被这个合约进行修改\r\n\r\n    bool public getFundSuccess = false;\r\n\r\n    constructor(uint _lockTime, address dataFeedAddr) {\r\n        // 合约部署得到时候会调用 constructor\r\n        // sepolia testnet  0x694AA1769357215DE4FAC081bf1f309aDC325306\r\n        dataFeed = AggregatorV3Interface(dataFeedAddr);\r\n        owner = msg.sender; // 当前合约部署的人\r\n        deploymentTimestamp = block.timestamp; // block当前的区块\r\n        lockTime = _lockTime;\r\n    }\r\n\r\n    // external 外部可以调用的 payable可收款的 编译部署后按钮为红色\r\n    function fund() external payable {\r\n        // 断言相当于nodejs中的 assert\r\n        // require(condition 条件,'string')\r\n        require(convertEthToUsd(msg.value) >= MINIMUM_VALUE, \"Send more ETH\");\r\n\r\n        // 当前时间 < 合约部署时间 + 锁定时间 报错\r\n        require(\r\n            block.timestamp < deploymentTimestamp + lockTime,\r\n            \"window is closed\"\r\n        );\r\n\r\n        funderToAmount[msg.sender] = msg.value;\r\n    }\r\n\r\n    function getChainlinkDataFeedLatestAnswer() public view returns (int) {\r\n        // prettier-ignore\r\n        (\r\n            /* uint80 roundId */,\r\n            int256 answer,\r\n            /*uint256 startedAt*/,\r\n            /*uint256 updatedAt*/,\r\n            /*uint80 answeredInRound*/\r\n        ) = dataFeed.latestRoundData();\r\n        return answer;\r\n    }\r\n\r\n    // 转化ETH到USD\r\n    function convertEthToUsd(\r\n        uint256 ethAmount\r\n    ) internal view returns (uint256) {\r\n        uint256 ethPrice = uint256(getChainlinkDataFeedLatestAnswer()); // 得到eth当前的价格\r\n        return (ethAmount * ethPrice) / (10 ** 8);\r\n        // ETH / USD precision = 10 ** 8\r\n        // x / ETH precision = 10 ** 18\r\n    }\r\n\r\n    // 修改owner 权限控制\r\n    function transferOwnership(address newOrder) public onlyOwner {\r\n        owner = newOrder;\r\n    }\r\n\r\n    function getFund() external windowClosed onlyOwner {\r\n        // address(this).balance 获取当前的合约 balance余额单位是wei\r\n        require(\r\n            convertEthToUsd(address(this).balance) >= TRAGET,\r\n            \"Target is not reached\"\r\n        );\r\n\r\n        // transfer 纯转账 transfer ETH rever if tx failed 转账失败会损失gas费\r\n        // payable(msg.sender).transfer(address(this).balance);\r\n\r\n        // send 纯转账\r\n        // bool success = payable(msg.sender).send(address(this).balance);\r\n        // require(success,\"tx failed\");\r\n\r\n        // call 转账+逻辑常用 函数 transfer ETH with data return value of function and bool\r\n        // {bool,result(可以不用写，对应后面括号里面的方法)} = payable(msg.sender).call{value:金额要传的值}（“方法”）\r\n        bool success;\r\n        (success, ) = payable(msg.sender).call{value: address(this).balance}(\r\n            \"\"\r\n        );\r\n        require(success, \"transfer tx failed\");\r\n        funderToAmount[msg.sender] = 0;\r\n        getFundSuccess = true;\r\n    }\r\n\r\n    // 退款的操作\r\n    function refund() external windowClosed {\r\n        require(\r\n            convertEthToUsd(address(this).balance) < TRAGET,\r\n            \"Target is reached\"\r\n        );\r\n        require(funderToAmount[msg.sender] != 0, \"there is no fund for you\");\r\n\r\n        bool success;\r\n        (success, ) = payable(msg.sender).call{\r\n            value: funderToAmount[msg.sender]\r\n        }(\"\");\r\n        require(success, \"transfer tx failed\");\r\n        funderToAmount[msg.sender] = 0; // 找到对应的amount进行退款之后再设置为0防止重复退款\r\n    }\r\n\r\n    // 修改交易通证 transfer token\r\n    function setFunderToAmount(\r\n        address funder,\r\n        uint256 amountToUpdate\r\n    ) external {\r\n        require(\r\n            msg.sender == erc20Addr,\r\n            \"You do not have permission to call this function\"\r\n        );\r\n        funderToAmount[funder] = amountToUpdate;\r\n    }\r\n\r\n    // 只允许合约的所有者修改erc20Addr\r\n    function setErc20Addr(address _erc20Addr) public onlyOwner {\r\n        erc20Addr = _erc20Addr;\r\n    }\r\n\r\n    //  修改器 针对require的简便写法\r\n    modifier windowClosed() {\r\n        // 当前时间 > 合约部署时间 + 锁定时间 可以取款 否则窗口还没有关闭\r\n        require(\r\n            block.timestamp >= deploymentTimestamp + lockTime,\r\n            \"window is not closed\"\r\n        );\r\n        _; // 其他操作继续执行\r\n    }\r\n\r\n    modifier onlyOwner() {\r\n        require(\r\n            msg.sender == owner,\r\n            \"this function can only be called by owner\"\r\n        );\r\n        _; // 其他操作继续执行\r\n    }\r\n\r\n    // 合约销毁应该把钱退回去；没有写多次生成新的合约之前的钱去哪里了\r\n}\r\n"
+    }
+  },
+  "settings": {
+    "evmVersion": "paris",
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

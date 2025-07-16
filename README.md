@@ -16,10 +16,21 @@ npx hardhat ignition deploy ./ignition/modules/Lock.js
 # 运行脚本
 
 ```
+--reset 重置部署，重新部署合约
+npx hardhat deploy --network sepolia --reset
 npx hardhat deploy-fundme --network sepolia
 合约交互
 npx hardhat interact-fundme --addr 地址 --network sepolia
 
+```
+
+# 测试
+
+```
+hardhat-deploy
+npm install -D hardhat-deploy
+require("hardhat-deploy"); 在hardhat.config.js中添加
+npx hardhat deploy --tags mock
 ```
 
 ### 初始化

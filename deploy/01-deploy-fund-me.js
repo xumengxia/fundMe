@@ -1,38 +1,48 @@
-// function deployFunction() {
-//   console.log("this is a deploy function");
-// }
-// module.exports.default = deployFunction;
-// module.exports = async (hre) => {
-//   // 匿名函数 hre是吧hardhat传入进来
-//   console.log("this is a deploy function");
-// };
 const { network } = require("hardhat");
 const {
   developmentChains,
   networkConfig,
   LOCK_TIME,
+  CONFIRMATIONS,
 } = require("../helper-hardhat-config");
+// module.exports.default=deployFunction
+// module.exports= async(hre) => {
+//     const getNamdeAccounts = hre.getNamdeAccounts
+//     const deployments = hre.deployments
+//     console.log("this is a deploy function")
+// }
 
-// 匿名函数 hre是吧hardhat传入进来
 module.exports = async ({ getNamedAccounts, deployments }) => {
   const { firstAccount } = await getNamedAccounts();
   const { deploy } = deployments;
 
   let dataFeedAddr;
+  let confirmations;
   if (developmentChains.includes(network.name)) {
-    // 本地数据使用mock喂价
-    const mokeV3Aggregator = await deployments.get("MockV3Aggregator");
-    dataFeedAddr = mokeV3Aggregator.address;
+    const mockV3Aggregator = await deployments.get("MockV3Aggregator");
+    dataFeedAddr = mockV3Aggregator.address;
+    confirmations = 0;
   } else {
-    // 链上数据使用链上喂价
-
-    dataFeedAddr = networkConfig(network.config.chainId); // 链上喂价合约地址
+    dataFeedAddr = networkConfig[network.config.chainId].ethUsdDataFeed;
+    confirmations = CONFIRMATIONS;
   }
-  await deploy("FundMe", {
+
+  const fundMe = await deploy("FundMe", {
     from: firstAccount,
-    args: [LOCK_TIME, dataFeedAddr], // LOCK_TIME募资截止时间，单位是秒
-    log: true, // 打印部署日志
+    args: [LOCK_TIME, dataFeedAddr],
+    log: true,
+    waitConfirmations: confirmations,
   });
+  // remove deployments directory or add --reset flag if you redeploy contract
+
+  if (hre.network.config.chainId == 11155111 && process.env.ETHERSCAN_API_KEY) {
+    await hre.run("verify:verify", {
+      address: fundMe.address,
+      constructorArguments: [LOCK_TIME, dataFeedAddr],
+    });
+  } else {
+    console.log("Network is not sepolia, verification skipped...");
+  }
 };
 
 module.exports.tags = ["all", "fundme"];
