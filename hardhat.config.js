@@ -3,7 +3,9 @@ require("@nomicfoundation/hardhat-toolbox");
 require("@chainlink/env-enc").config(); // 加密之后的
 require("./tasks/index");
 require("hardhat-deploy"); // 测试
-
+require("@nomicfoundation/hardhat-ethers");
+require("hardhat-deploy");
+require("hardhat-deploy-ethers");
 const SEPOLIA_URL = process.env.SEPOLIA_URL;
 const PRIVATA_KEY = process.env.PRIVATA_KEY; //matemask私钥
 const PRIVATA_KEY_2 = process.env.PRIVATA_KEY_2;

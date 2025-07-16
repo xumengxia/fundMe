@@ -35,6 +35,8 @@ contract FundMe {
 
     bool public getFundSuccess = false;
 
+    event FundWithdrawByOwner(uint256);
+    event RefundByFunder(address, uint256);
     constructor(uint _lockTime, address dataFeedAddr) {
         // 合约部署得到时候会调用 constructor
         // sepolia testnet  0x694AA1769357215DE4FAC081bf1f309aDC325306
@@ -103,12 +105,16 @@ contract FundMe {
         // call 转账+逻辑常用 函数 transfer ETH with data return value of function and bool
         // {bool,result(可以不用写，对应后面括号里面的方法)} = payable(msg.sender).call{value:金额要传的值}（“方法”）
         bool success;
+        uint256 balance = address(this).balance;
         (success, ) = payable(msg.sender).call{value: address(this).balance}(
             ""
         );
+
         require(success, "transfer tx failed");
         funderToAmount[msg.sender] = 0;
         getFundSuccess = true;
+        // emit event
+        emit FundWithdrawByOwner(balance);
     }
 
     // 退款的操作
@@ -120,11 +126,11 @@ contract FundMe {
         require(funderToAmount[msg.sender] != 0, "there is no fund for you");
 
         bool success;
-        (success, ) = payable(msg.sender).call{
-            value: funderToAmount[msg.sender]
-        }("");
+        uint balance = funderToAmount[msg.sender];
+        (success, ) = payable(msg.sender).call{value: balance}("");
         require(success, "transfer tx failed");
         funderToAmount[msg.sender] = 0; // 找到对应的amount进行退款之后再设置为0防止重复退款
+        emit RefundByFunder(msg.sender, balance);
     }
 
     // 修改交易通证 transfer token
